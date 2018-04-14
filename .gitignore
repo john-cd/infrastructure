@@ -1,6 +1,10 @@
 terraform.exe
 helm.exe
 
+# Credentials are not saved in git
+/credentials/**
+
+
 # Terraform files
 .terraform
 terraform.tfstate
