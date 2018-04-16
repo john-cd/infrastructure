@@ -1,6 +1,12 @@
 __WORK IN PROGRESS__
 
-# Goals
+
+## Useful Links
+
+[Ansible doc]( docs/Ansible.md )
+[Terraform doc]( docs/Terraform.md )
+
+## Goals
 
 Automation of the infrastructure for a REST API endpoint hosted on AWS
 
@@ -87,7 +93,7 @@ kubectl cluster-info
 ## Folder Layout
 
 - ``credentials``: stores AWS access key and secret key
-- ``resources``: actual resources to be created
+- ``layers``: the multiple layers of the application, each deployed independently
 - ``terraform``: shared Terraform modules
 - ``helm``: shared Helm charts
 

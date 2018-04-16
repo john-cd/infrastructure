@@ -58,9 +58,10 @@ module "iam_automation" {
 # Create a management VPC
 
 module "vpc_management" {
-  source           = "../terraform/modules/vpc_main"
+  source           = "../terraform/modules/network"
   environment_name = "mgmt"
   vpc_cidr         = "10.16.0.0/16"
+  zones = ["${var.zones}"]
 }
 
 # Create a security group for the bastion servers

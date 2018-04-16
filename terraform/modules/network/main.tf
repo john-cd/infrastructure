@@ -1,4 +1,4 @@
-# https://github.com/terraform-aws-modules/terraform-aws-vpc
+# Create a fully loaded VPC
 
 data "template_file" "private_zone_cidr" {
   # Render the template once for each zone
@@ -24,9 +24,13 @@ data "template_file" "public_zone_cidr" {
   }
 }
 
-module "vpc_main" {
-  source  = "terraform-aws-modules/vpc/aws"
-  version = "1.30.0"
+# Create the VPC, subnets, routes, S3 endpoint...
+# We use a modified version of 
+# https://github.com/terraform-aws-modules/terraform-aws-vpc
+#   version = "1.30.0"
+
+module "network" {
+  source  = "${path.module}\modules\terraform-aws-vpc-master"
 
   create_vpc = true
 
@@ -58,11 +62,11 @@ module "vpc_main" {
   }
 }
 
-# create engress gateway + route table entries for it
+# Create engress gateway + route table entries for it
 
 module "ipv6" {
   source = "../ipv6"
 
-  vpc_id                  = "${module.vpc_main.vpc_id}"
-  private_route_table_ids = "${module.vpc_main.private_route_table_ids}"
+  vpc_id                  = "${module.network.vpc_id}"
+  private_route_table_ids = "${module.network.private_route_table_ids}"
 }
