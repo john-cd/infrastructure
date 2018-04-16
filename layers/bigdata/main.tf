@@ -8,7 +8,7 @@ terraform {
   backend "s3" {
     region = "us-west-2"
 	bucket = "charliedelta-config"
-	key    = "kube_layer/api/dev/dev.tfstate"
+	key    = "kube_layer/bigdata/dev/dev.tfstate"
 	#encrypt = true
 
 	#kms_key_id = "alias/terraform"
@@ -19,25 +19,24 @@ terraform {
   }
 }
 
-# Avoid warning message
+## Avoid warning message
 provider "template" {
   version = "~> 1.0"
 }
 
-# Specify the provider and access details
+## Specify the provider and access details
 provider "aws" {
   version                 = ">= 1.0.0"
   region                  = "${var.aws_region}"
+  
   shared_credentials_file = "${path.root}/../credentials/credentials"
-
   # profile = "default"
 }
 
-module "key_pair" {
-  source   = "../../terraform/modules/key_pair"
-  key_name = "dev-ec2-key"
+## Install Apache Spark
+
+module "spark" {
+  source = "${format("%s/../../terraform/modules/spark", path.root)}"
 }
 
-module "kube" {
-  source = "../../terraform/modules/kube"
-}
+
