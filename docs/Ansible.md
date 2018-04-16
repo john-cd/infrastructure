@@ -34,7 +34,7 @@ You also need Python 2.6 or later.
 
 ## Configure Ansible
 
-### Static hosts file
+### Static hosts file (for testing)
 
 Edit (or create) a ``hosts`` file and put one or more remote systems in it. 
 
@@ -44,7 +44,8 @@ aserver.example.org
 bserver.example.org
 ```
 
-The default location is ``/etc/ansible/hosts``
+The default location is ``/etc/ansible/hosts``. To override it, use ``export ANSIBLE_INVENTORY=ansible/inventory/hosts`` 
+or use the ``-i`` command line option.
 
 
 ### AWS EC2 Dynamic Inventory 
@@ -53,88 +54,66 @@ The default location is ``/etc/ansible/hosts``
 
 [ec2.py script]( https://raw.githubusercontent.com/ansible/ansible/devel/contrib/inventory/ec2.py )
 
-- Copy ``ec2.py`` into an ``inventory`` subdirectory
+[ec2.ini]( https://raw.githubusercontent.com/ansible/ansible/devel/contrib/inventory/ec2.ini )
 
-- Test the script 
+[AWS blog]( https://aws.amazon.com/blogs/apn/getting-started-with-ansible-and-dynamic-amazon-ec2-inventory-management/ )
+
+
+- Install Python / Boto
 
 ```shell
-./inventory/ec2.py --list
+sudo apt update
+sudo apt upgrade
+sudo apt-get remove python-pip  # avoid apt/pip confusion 
+sudo easy_install pip
+# optionally: pip install --upgrade pip
+sudo pip install boto
+sudo pip install boto3
 ```
 
-or 
+- Copy ``ec2.py`` and ``ec2.ini`` into the ``ansible/inventory`` subdirectory
 
-```shell
-ansible -i inventory --list-hosts
+- Configure Boto (python library to control AWS)
+ 
+From the root of the repo, 
+ 
+```shell 
+# note: does not seem to work
+export AWS_SHARED_CREDENTIALS_FILE=$(pwd)/credentials/credentials
 ```
 
-If the location given to ``-i`` in Ansible is a directory (or as so configured in ansible.cfg), Ansible can use multiple inventory sources at the same time. When doing so, it is possible to mix both dynamic and statically managed inventory sources in the same ansible run. 
-In an inventory directory, executable files will be treated as dynamic inventory sources and most other files as static sources.
+To choose a profile: ``export AWS_PROFILE="default"``
 
-### SSH Keys
-
-Your public SSH key should be located in ``authorized_keys`` on each remote host:
-
-[authorized_keys file]( https://www.ssh.com/ssh/authorized_keys/ )
-[authorized_keys in OpenSSH]( https://www.ssh.com/ssh/authorized_keys/openssh )
-
-#### Generating a new key
-
-New key pairs can be generated using the ``ssh-keygen`` program
-
-[keygen](  https://www.ssh.com/ssh/keygen/ )
+OR use directly
 
 ```shell
-ssh-keygen 
-#or more secure:
-ssh-keygen -t ecdsa -b 521
+export AWS_ACCESS_KEY_ID='AK123'
+export AWS_SECRET_ACCESS_KEY='abc123'
 ```
 
-Options:
-	-t algorithm e.g. rsa 
-	-b bit length e.g. 4096
-	-f /path/to/file 
-	-N new passphrase
-	-q   quiet mode
-	-C "label"
-	
-The ``ssh-copy-id`` tool can then be used for copying keys in an ``authorized_keys`` file on a remote server. 
+- Test the ec2.py script 
 
-[ssh-copy-id]( https://www.ssh.com/ssh/copy-id )
+From the root of the repo,
 
 ```shell
-ssh-copy-id -i ~/.ssh/id_rsa user@host
+./ansible/inventory/ec2.py --list
 ```
 
-The default location of the ``authorized_keys`` file is ``~/.ssh/authorized_keys``
-
-
-#### Test the new key
+- Configure Ansible
 
 ```shell
-ssh -i ~/.ssh/mykey user@host
+export ANSIBLE_CONFIG=ansible/config/ansible.cfg
+export ANSIBLE_INVENTORY=ansible/inventory
+#export ANSIBLE_HOST_KEY_CHECKING=False
 ```
 
-#### Adding the key to ``ssh-agent``
-
-[ssh-agent]( https://www.ssh.com/ssh/agent )
+Check the configuration with
 
 ```shell
-# start the ssh-agent in the background
-eval `ssh-agent` 
-
-#or: eval $(ssh-agent -s)
-
-Add your SSH private key to the ssh-agent.
-ssh-add ~/.ssh/id_rsa 
-ssh-add -l
+ansible-config view --config ./ansible/ansible.cfg
 ```
 
 ### Test Ansible
-
-```shell
-ansible -i inventory -m ping
-ansible all -i inventory -a "/bin/echo hello"
-```
 
 [Ansible options]( https://docs.ansible.com/ansible/latest/cli/ansible.html ):
 	-u user
@@ -142,16 +121,50 @@ ansible all -i inventory -a "/bin/echo hello"
 	-a module arguments
 	-i inventory
 
-To override the remote user name, just use the ‘-u’ parameter.
+Test that Ansible can list AWS hosts: 
 
+```shell
+ansible all -i ansible/inventory --list-hosts
+```
+
+If the location given to ``-i`` in Ansible is a directory (or as so configured in ansible.cfg), Ansible can use multiple inventory sources at the same time. When doing so, it is possible to mix both dynamic and statically managed inventory sources in the same ansible run. 
+In an inventory directory, executable files will be treated as dynamic inventory sources and most other files as static sources.
+
+Ping all hosts:
+
+```shell
+ansible all -i ansible/inventory -m ping
+```
+
+Ping instances with the tag “Ansible Slave” applied to them:
+
+```shell
+ansible -m ping tag_Ansible_Slave
+```
+
+### Execute commands remotely with Ansible
+
+The public SSH key should be located in ``authorized_keys`` on each remote host:
+
+[authorized_keys file]( https://www.ssh.com/ssh/authorized_keys/ )
+[authorized_keys in OpenSSH]( https://www.ssh.com/ssh/authorized_keys/openssh )
+
+See [SSH Doc]( ./SSH.md )
+
+
+
+- Test using
+
+```shell
+ansible all -i inventory -a "/bin/echo hello"
+```
 
 ## Install Ansible roles
-
 
 Example with Helm:
 
 ```shell
-ansible-galaxy install andrewrothstein.kubernetes-helm --roles-path ./roles
+ansible-galaxy install andrewrothstein.kubernetes-helm --roles-path ./ansible/roles
 ```
 
 
