@@ -1,2 +1,4 @@
 
-Home of Terraform modules that are used in the root Terraform module in ../resources
+Home of Terraform 
+
+- ``modules`` folder: Terraform modules that are used in the root modules in the "layers" folder 

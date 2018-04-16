@@ -1,5 +1,6 @@
 terraform.exe
 helm.exe
+*.url
 
 # Credentials are not saved in git
 /credentials/**

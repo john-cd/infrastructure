@@ -1,5 +1,5 @@
 variable "key_name" {
-  description = "Name of the EC2 key pair"
+  description = "Name of the EC2 key pair e.g. <env>-ec2-key"
   type        = "string"
   default     = "main-ec2-key"
 }
