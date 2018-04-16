@@ -30,7 +30,8 @@ data "template_file" "public_zone_cidr" {
 #   version = "1.30.0"
 
 module "network" {
-  source  = "${path.module}\modules\terraform-aws-vpc-master"
+  source  = "./modules/terraform-aws-vpc-master"
+  #"${format("%s/modules/terraform-aws-vpc-master", path.module)}"
 
   create_vpc = true
 

@@ -56,13 +56,19 @@ terraform -install-autocomplete
 From the root of the repo:
 
 ```shell
-terraform init ./resources
+terraform init ./layers/mgmt
 ```
 
-To override the backend configuration (e.g. storage location of the terraform.tfstate file and access credentials):
+Or to pass a backend config file
 
 ```shell
-terraform init ./resources \
+terraform init -backend-config=./layers/mgmt/backend-mgmt.conf ./layers/mgmt
+```
+
+To override specific backend configuration items (e.g. storage location of the terraform.tfstate file and access credentials):
+
+```shell
+terraform init ./layers/mgmt \
 	-backend-config="bucket = (YOUR_BUCKET_NAME)"
 	-backend-config="region = (YOUR_BUCKET_REGION)"
 	-backend-config="shared_credentials_file = ~/.aws/credentials"
@@ -71,14 +77,31 @@ terraform init ./resources \
 Validate the config files and display the execution plan:
 
 ```shell
-terraform validate ./resources 
-terraform plan ./resources
+terraform validate ./layers/mgmt
 ```
 
-After review of the plan, create resources:
+Note: you can override the default values for the root module variables by passing the ``.tfvars`` file
 
 ```shell
-terraform apply ./resources
+terraform validate -var-file=./layers/mgmt/mgmt.tfvars ./layers/mgmt
+```
+
+### Verify the Terraform execution plan then apply it
+
+```shell
+terraform plan ./layers/mgmt
+
+#or
+terraform plan -var-file=./layers/mgmt/mgmt.tfvars ./layers/mgmt
+```
+
+After review of the plan, create the resources:
+
+```shell
+terraform apply ./layers/mgmt
+
+#or
+terraform apply -var-file=./layers/mgmt/mgmt.tfvars ./layers/mgmt
 ```
 
 ### After deployment
@@ -92,8 +115,8 @@ kubectl cluster-info
 
 ## Folder Layout
 
-- ``credentials``: stores AWS access key and secret key
-- ``layers``: the multiple layers of the application, each deployed independently
+- ``credentials``: stores AWS access key and secret key(s) and EC2 instance key pairs
+- ``layers``: the multiple layers of the application, each deployed independently. Example: management layer; Kubernetes / API layer; Spark / Big Data layer
 - ``terraform``: shared Terraform modules
 - ``helm``: shared Helm charts
 

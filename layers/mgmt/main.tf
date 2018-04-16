@@ -1,25 +1,32 @@
 terraform {
   required_version = ">= 0.10.13"
 
+  # Remote backend 
+  # Can be overriden by passing backend-*.conf 
   # https://www.terraform.io/docs/backends/types/s3.html
+  # https://github.com/BWITS/terraform-best-practices
   backend "s3" {
+    region = "us-west-2"
     bucket = "charliedelta-config"
-    key    = "mgmt/terraform_state"
-
+    key    = "mgmt/mgmt.tfstate"
     # encrypt = true
-    region                  = "us-west-2"
-    shared_credentials_file = "./credentials/credentials" # assumes running terraform from the root of the repo
 
+    shared_credentials_file = "./credentials/credentials" # assumes running terraform from the root of the repo
     # profile = "default"
   }
 }
 
+# Avoid warning message
+provider "template" {
+  version = "~> 1.0"
+}
+
 # Specify the provider and access details
 provider "aws" {
-  region                  = "${var.aws_region}"
-  version                 = ">= 1.0.0"
-  shared_credentials_file = "${path.root}/../credentials/credentials"
+  region  = "${var.aws_region}"
+  version = ">= 1.0.0"
 
+  shared_credentials_file = "${path.module}/../../credentials/credentials"
   # profile = "default"
 }
 
@@ -34,13 +41,14 @@ module "account" {
   aws_region   = "${var.aws_region}"
 
   ## Password settings
-  password_hard_expiry = false
-  password_max_age = 180
-  password_min_length = 10
+  password_hard_expiry      = false
+  password_max_age          = 180
+  password_min_length       = 10
   password_reuse_prevention = 10
 
   ## CloudTrail settings  
   trail_name = "mgmt"
+
   # trail_bucketname_create = 1
   # trail_bucketname = "" # Will defaults to <account-id>-logs.
   # trail_bucket_default_encryption = "AES256"
@@ -51,17 +59,17 @@ module "account" {
 # Create users and groups
 /*
 module "iam_automation" {
-  source = "../terraform/modules/iam_automation"
+  source = "${path.module}/../../terraform/modules/iam_automation"
 }
 */
 
-# Create a management VPC
+# Create a management VPC, subnets, IGW, egress GW, routes...
 
-module "vpc_management" {
-  source           = "../terraform/modules/network"
+module "mgmt_network" {
+  source           = "${path.module}/../../terraform/modules/network"
   environment_name = "mgmt"
   vpc_cidr         = "10.16.0.0/16"
-  zones = ["${var.zones}"]
+  zones            = ["${var.zones}"]
 }
 
 # Create a security group for the bastion servers
@@ -69,20 +77,18 @@ module "vpc_management" {
 # https://github.com/terraform-aws-modules/terraform-aws-security-group/tree/master/modules/ssh
 
 module "ssh-security-group" {
-  source = "terraform-aws-modules/security-group/aws//modules/ssh"
+  source  = "terraform-aws-modules/security-group/aws//modules/ssh"
   version = "1.9.0"
 
   name        = "ssh_sg"
   description = "Security group for SSH, all world open"
-  vpc_id      = "${module.vpc_management.vpc_id}"
+  vpc_id      = "${module.mgmt_network.vpc_id}"
 
   ingress_cidr_blocks = ["0.0.0.0/0"]
   create              = true
 }
 
-
 data "aws_iam_account_alias" "current" {}
-
 
 # Create an auto-scaling group of Bastion servers, allowing SSH access to the private EC2 instances
 # https://registry.terraform.io/modules/kurron/bastion/aws/0.9.0
@@ -93,8 +99,8 @@ module "bastion" {
   version = "0.9.0"
 
   # register a ec2 key
-  ssh_key_name   = ""                                                        # not used  
-  public_ssh_key = "${file("${path.root}/../credentials/main-ec2-key.pub")}"
+  ssh_key_name   = ""                                                           # not used by the module?   
+  public_ssh_key = "${file("${path.root}/../../credentials/main-ec2-key.pub")}"
 
   # launch configuration
   region        = "us-west-2"
@@ -108,7 +114,7 @@ module "bastion" {
   cooldown                  = 90  # seconds
 
   # auto-scaling group tags
-  creator     = "${data.aws_iam_account_alias.current}"
+  creator     = "${data.aws_iam_account_alias.current.name}"
   environment = "mgmt"
   project     = "mgmt"
   freetext    = ""
@@ -121,5 +127,5 @@ module "bastion" {
 
   security_group_ids = ["${module.ssh-security-group.this_security_group_id}"]
 
-  subnet_ids = ["${module.vpc_management.public_subnets}"]
+  subnet_ids = ["${module.mgmt_network.public_subnets}"]
 }
