@@ -1,6 +1,7 @@
-# https://github.com/terraform-community-modules/tf_aws_nat
 
-resource "aws_security_group" "nat" {
+# Create a security group for the NAT instance
+
+resource "aws_security_group" "nat_sg" {
   name        = "nat_sg"
   description = "Allows NAT traffic"
   vpc_id      = "${var.vpc_id}"
@@ -20,15 +21,18 @@ resource "aws_security_group" "nat" {
   }
 }
 
+# Create a NAT instance
+# https://github.com/terraform-community-modules/tf_aws_nat
+
 module "nat" {
   source                 = "github.com/terraform-community-modules/tf_aws_nat"
-  name                   = "${var.name}"
+  name                   = "${var.instance_name}"
   instance_type          = "t2.nano"
   instance_count         = "1"
-  aws_key_name           = "mykeyname"
-  public_subnet_ids      = "${var.public_subnets}"
-  private_subnet_ids     = "${var.private_subnets}"
-  vpc_security_group_ids = ["${aws_security_group.nat.id}"]
+  aws_key_name           = "${var.aws_key_name}"
+  public_subnet_ids      = "${var.public_subnet_ids}"
+  private_subnet_ids     = "${var.private_subnet_ids}"
+  vpc_security_group_ids = ["${aws_security_group.nat_sg.id}"]
   az_list                = "${var.zones}"
   subnets_count          = "${length(var.zones)}"
   route_table_identifier = "private"
