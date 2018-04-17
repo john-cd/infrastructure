@@ -1,28 +1,34 @@
-
 # Install Kubernetes on AWS
 
 # https://registry.terraform.io/modules/coreos/kubernetes/aws/1.8.9-tectonic.1
 # https://github.com/coreos/terraform-aws-kubernetes
 
+data "aws_vpc" "selected" {
+  id = "${var.vpc_id}"
+}
 
 module "kubernetes" {
   source  = "coreos/kubernetes/aws"
   version = "1.8.9-tectonic.1"
 
+  tectonic_admin_email = "${var.admin_email}"
+  tectonic_admin_password = "${var.admin_password}"
+  # TODO "${rsadecrypt(var.encrypted_password, file(format("%s/%s", path.root, var.public_key_path)))}"
+  
   // (optional) Extra AWS tags to be applied to created autoscaling group resources.
   // This is a list of maps having the keys `key`, `value` and `propagate_at_launch`.
   // 
   // Example: `[ { key = "foo", value = "bar", propagate_at_launch = true } ]`
-  // tectonic_autoscaling_group_extra_tags = ""
-
+  tectonic_autoscaling_group_extra_tags = [ {key = "Name", value = "${var.application_name}-${var.environment_name}-asg", propagate_at_launch = true} ]
 
   // (optional) Unique name under which the Amazon S3 bucket will be created. Bucket name must start with a lower case name and is limited to 63 characters.
   // The Tectonic Installer uses the bucket to store tectonic assets and kubeconfig.
   // If name is not provided the installer will construct the name using "tectonic_cluster_name", current AWS region and "tectonic_base_domain"
-  // tectonic_aws_assets_s3_bucket_name = ""
+  tectonic_aws_assets_s3_bucket_name = "${var.application_name}-${var.environment_name}-assets"
 
   // Instance size for the etcd node(s). Example: `t2.medium`. Read the [etcd recommended hardware]( https://coreos.com/etcd/docs/latest/op-guide/hardware.html ) guide for best performance
-  tectonic_aws_etcd_ec2_type = "t2.micro"
+  //tectonic_aws_etcd_ec2_type = "${var.etcd_instance_type}"
+
 
   // (optional) List of additional security group IDs for etcd nodes.
   // 
@@ -33,7 +39,7 @@ module "kubernetes" {
   // Ignored if the volume type is not io1.
   tectonic_aws_etcd_root_volume_iops = "100"
   // The size of the volume in gigabytes for the root block device of etcd nodes.
-  tectonic_aws_etcd_root_volume_size = "3"  // 30
+  tectonic_aws_etcd_root_volume_size = "3" // 30
   // The type of volume for the root block device of etcd nodes.
   tectonic_aws_etcd_root_volume_type = "gp2"
 
@@ -41,7 +47,7 @@ module "kubernetes" {
   // Required to use an existing VPC and the list must match the AZ count.
   // 
   // Example: `["subnet-111111", "subnet-222222", "subnet-333333"]`
-  // tectonic_aws_external_master_subnet_ids = ""
+  tectonic_aws_external_master_subnet_ids = ["${var.master_subnet_ids}"]
 
 
   // (optional) If set, the given Route53 zone ID will be used as the internal (private) zone.
@@ -51,24 +57,19 @@ module "kubernetes" {
   // Example: `"Z1ILINNUJGTAO1"`
   // tectonic_aws_external_private_zone = ""
 
-
   // (optional) ID of an existing VPC to launch nodes into.
   // If unset a new VPC is created.
   // 
   // Example: `vpc-123456`
-  // tectonic_aws_external_vpc_id = ""
-
-
+  tectonic_aws_external_vpc_id = "${var.vpc_id}"
   // (optional) List of subnet IDs within an existing VPC to deploy worker nodes into.
   // Required to use an existing VPC and the list must match the AZ count.
   // 
   // Example: `["subnet-111111", "subnet-222222", "subnet-333333"]`
-  // tectonic_aws_external_worker_subnet_ids = ""
-
-
+  tectonic_aws_external_worker_subnet_ids = "${var.worker_subnet_ids}"
   // (optional) Extra AWS tags to be applied to created resources.
-  // tectonic_aws_extra_tags = ""
-
+  tectonic_aws_extra_tags = { Application = "${var.application_name}"
+							  Environment = "${var.environment_name}" }
 
   // (optional) This configures master availability zones and their corresponding subnet CIDRs directly.
   // 
@@ -77,7 +78,7 @@ module "kubernetes" {
   // tectonic_aws_master_custom_subnets = ""
 
   // Instance size for the master node(s). Example: `t2.medium`.
-  tectonic_aws_master_ec2_type = "t2.micro"
+  tectonic_aws_master_ec2_type = "${var.master_instance_type}"
 
   // (optional) List of additional security group IDs for master nodes.
   // 
@@ -115,14 +116,12 @@ module "kubernetes" {
   // tectonic_aws_public_endpoints = true
 
   // The target AWS region for the cluster.
-  tectonic_aws_region = "us-west-2"
-  
+  tectonic_aws_region = "${var.region}"
   // Name of an SSH key located within the AWS region. Example: coreos-user.
-  tectonic_aws_ssh_key = ""
-  
+  tectonic_aws_ssh_key = "${var.ssh_key_name}"
   // Block of IP addresses used by the VPC.
   // This should not overlap with any other networks, such as a private datacenter connected via Direct Connect.
-  tectonic_aws_vpc_cidr_block = "10.0.0.0/16"
+  tectonic_aws_vpc_cidr_block = "${data.aws_vpc.selected.cidr_block}"
 
   // (optional) This configures worker availability zones and their corresponding subnet CIDRs directly.
   // 
@@ -130,7 +129,7 @@ module "kubernetes" {
   // tectonic_aws_worker_custom_subnets = ""
 
   // Instance size for the worker node(s). Example: `t2.medium`.
-  tectonic_aws_worker_ec2_type = "t2.medium"
+  tectonic_aws_worker_ec2_type = "${var.worker_instance_type}"
 
   // (optional) List of additional security group IDs for worker nodes.
   // 
@@ -173,7 +172,7 @@ module "kubernetes" {
   // To use Azure-provided DNS, `tectonic_base_domain` should be set to `""`
   // If using DNS records, ensure that `tectonic_base_domain` is set to a properly configured external DNS zone.
   // Instructions for configuring delegated domains for Azure DNS can be found here: https://docs.microsoft.com/en-us/azure/dns/dns-delegate-domain-azure-dns
-  tectonic_base_domain = ""
+  tectonic_base_domain = "${var.base_domain_name}"
 
   // (optional) The content of the PEM-encoded CA certificate, used to generate Tectonic Console's server certificate.
   // If left blank, a CA certificate will be automatically generated.
@@ -199,7 +198,7 @@ module "kubernetes" {
   // 
   // Note: This field MUST be set manually prior to creating the cluster.
   // Warning: Special characters in the name like '.' may cause errors on OpenStack platforms due to resource name constraints.
-  tectonic_cluster_name = ""
+  tectonic_cluster_name = "${var.application_name}-${var.environment_name}-kubernetes"
 
   // (optional) The Container Linux update channel.
   // 
@@ -300,8 +299,7 @@ module "kubernetes" {
   tectonic_license_path = ""
   // The number of master nodes to be created.
   // This applies only to cloud platforms.
-  tectonic_master_count = "1"
-
+  tectonic_master_count = "${var.master_count}"
   // (optional) Configures the network to be used in Tectonic. One of the following values can be used:
   // 
   // - "flannel": enables overlay networking only. This is implemented by flannel using VXLAN.
@@ -309,8 +307,7 @@ module "kubernetes" {
   // - "canal": [ALPHA] enables overlay networking including network policy. Overlay is implemented by flannel using VXLAN. Network policy is implemented by Calico.
   // 
   // - "calico": [ALPHA] enables BGP based networking. Routing and network policy is implemented by Calico. Note this has been tested on baremetal installations only.
-  // tectonic_networking = "flannel"
-
+  tectonic_networking = "flannel"
   // The path the pull secret file in JSON format.
   // This is known to be a "Docker pull secret" as produced by the docker login [1] command.
   // A sample JSON content is shown in [2].
@@ -333,11 +330,9 @@ module "kubernetes" {
   // Default is 3 years.
   // This setting is ignored if user provided certificates are used.
   tectonic_tls_validity_period = "26280"
-
   // If set to true, a vanilla Kubernetes cluster will be deployed, omitting any Tectonic assets.
   tectonic_vanilla_k8s = true
-
   // The number of worker nodes to be created.
   // This applies only to cloud platforms.
-  tectonic_worker_count = "3"
+  tectonic_worker_count = "${var.worker_count}"
 }

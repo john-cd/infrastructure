@@ -3,9 +3,9 @@
 // From: https://github.com/apache/spark/blob/v1.4.1/ec2/spark_ec2.py#L468-L527
 // See https://github.com/hashicorp/atlas-examples/blob/master/spark/terraform/firewalls-spark-master.tf
  
-resource "aws_security_group" "spark-master" {
-    name = "spark-master"
-    description = "Spark Master"
+resource "aws_security_group" "spark_master_sg" {
+    name = "${var.application_name}-${var.environment_name}-spark-master"
+    description = "Spark Master Security Group"
     vpc_id = "${var.vpc_id}"
 	
     # Avoid circular dependencies stopping the destruction of the cluster
@@ -16,15 +16,17 @@ resource "aws_security_group" "spark-master" {
   }
  
   tags {
-    name = "spark-master-security-group"
+	Name = "${var.application_name}-${var.environment_name}-spark-master-sg"
+	Application = "${var.application_name}"
+	Environment = "${var.environment_name}"
   }
 	
 }
 
 // master - self firewalls
 
-resource "aws_security_group_rule" "spark-master-icmp-self" {
-    security_group_id = "${aws_security_group.spark-master.id}"
+resource "aws_security_group_rule" "spark_master_icmp_self" {
+    security_group_id = "${aws_security_group.spark_master_sg.id}"
     type = "ingress"
     protocol = "icmp"
     from_port = -1
@@ -32,8 +34,8 @@ resource "aws_security_group_rule" "spark-master-icmp-self" {
     self = true
 }
 
-resource "aws_security_group_rule" "spark-master-tcp-all-self" {
-    security_group_id = "${aws_security_group.spark-master.id}"
+resource "aws_security_group_rule" "spark_master_tcp_all_self" {
+    security_group_id = "${aws_security_group.spark_master_sg.id}"
     type = "ingress"
     protocol = "tcp"
     from_port = 0
@@ -41,8 +43,8 @@ resource "aws_security_group_rule" "spark-master-tcp-all-self" {
     self = true
 }
 
-resource "aws_security_group_rule" "spark-master-udp-all-self" {
-    security_group_id = "${aws_security_group.spark-master.id}"
+resource "aws_security_group_rule" "spark_master_udp_all_self" {
+    security_group_id = "${aws_security_group.spark_master_sg.id}"
     type = "ingress"
     protocol = "udp"
     from_port = 0
@@ -50,36 +52,36 @@ resource "aws_security_group_rule" "spark-master-udp-all-self" {
     self = true
 }
 
-resource "aws_security_group_rule" "spark-master-icmp-all-slave" {
-    security_group_id = "${aws_security_group.spark-master.id}"
+resource "aws_security_group_rule" "spark_master_icmp_all_slave" {
+    security_group_id = "${aws_security_group.spark_master_sg.id}"
     type = "ingress"
     protocol = "icmp"
     from_port = -1
     to_port = -1
-    source_security_group_id = "${aws_security_group.spark-slave.id}"
+    source_security_group_id = "${aws_security_group.spark_slave_sg.id}"
 }
 
-resource "aws_security_group_rule" "spark-master-tcp-all-slave" {
-    security_group_id = "${aws_security_group.spark-master.id}"
+resource "aws_security_group_rule" "spark_master_tcp_all_slave" {
+    security_group_id = "${aws_security_group.spark_master_sg.id}"
     type = "ingress"
     protocol = "tcp"
     from_port = 0
     to_port = 65535
-    source_security_group_id = "${aws_security_group.spark-slave.id}"
+    source_security_group_id = "${aws_security_group.spark_slave_sg.id}"
 }
 
-resource "aws_security_group_rule" "spark-master-udp-all-slave" {
-    security_group_id = "${aws_security_group.spark-master.id}"
+resource "aws_security_group_rule" "spark_master_udp_all_slave" {
+    security_group_id = "${aws_security_group.spark_master_sg.id}"
     type = "ingress"
     protocol = "udp"
     from_port = 0
     to_port = 65535
-    source_security_group_id = "${aws_security_group.spark-slave.id}"
+    source_security_group_id = "${aws_security_group.spark_slave_sg.id}"
 }
 
 # Web
-resource "aws_security_group_rule" "spark-master-web" {
-    security_group_id = "${aws_security_group.spark-master.id}"
+resource "aws_security_group_rule" "spark_master_web" {
+    security_group_id = "${aws_security_group.spark_master_sg.id}"
     type = "ingress"
     protocol = "tcp"
     from_port = 8443
@@ -88,8 +90,8 @@ resource "aws_security_group_rule" "spark-master-web" {
 }
 
 # SSH
-resource "aws_security_group_rule" "spark-master-ssh" {
-    security_group_id = "${aws_security_group.spark-master.id}"
+resource "aws_security_group_rule" "spark_master_ssh" {
+    security_group_id = "${aws_security_group.spark_master_sg.id}"
     type = "ingress"
     protocol = "tcp"
     from_port = 22
@@ -100,8 +102,8 @@ resource "aws_security_group_rule" "spark-master-ssh" {
 #### Expose web interfaces to VPN
 
 # Yarn
-resource "aws_security_group_rule" "spark-master-ssh" {
-    security_group_id = "${aws_security_group.spark-master.id}"
+resource "aws_security_group_rule" "spark_master_yarn" {
+    security_group_id = "${aws_security_group.spark_master_sg.id}"
     type = "ingress"
     protocol = "tcp"
     from_port = 8088
@@ -110,8 +112,8 @@ resource "aws_security_group_rule" "spark-master-ssh" {
 }
 
 # Spark History
-resource "aws_security_group_rule" "spark-master-spark-history" {
-    security_group_id = "${aws_security_group.spark-master.id}"
+resource "aws_security_group_rule" "spark_master_spark_history" {
+    security_group_id = "${aws_security_group.spark_master_sg.id}"
     type = "ingress"
     protocol = "tcp"
     from_port = 18080
@@ -120,8 +122,8 @@ resource "aws_security_group_rule" "spark-master-spark-history" {
 }
 
 # Zeppelin
- resource "aws_security_group_rule" "spark-master-zeppelin" {
-    security_group_id = "${aws_security_group.spark-master.id}"
+ resource "aws_security_group_rule" "spark_master_zeppelin" {
+    security_group_id = "${aws_security_group.spark_master_sg.id}"
     type = "ingress"
     protocol = "tcp"
     from_port = 8890
@@ -130,8 +132,8 @@ resource "aws_security_group_rule" "spark-master-spark-history" {
 }
 
 # Spark UI
- resource "aws_security_group_rule" "spark-master-zeppelin" {
-    security_group_id = "${aws_security_group.spark-master.id}"
+ resource "aws_security_group_rule" "spark_master_spark_UI" {
+    security_group_id = "${aws_security_group.spark_master_sg.id}"
     type = "ingress"
     protocol = "tcp"
     from_port = 4040
@@ -140,8 +142,8 @@ resource "aws_security_group_rule" "spark-master-spark-history" {
 }
 
 # Ganglia
- resource "aws_security_group_rule" "spark-master-ganglia" {
-    security_group_id = "${aws_security_group.spark-master.id}"
+ resource "aws_security_group_rule" "spark_master_ganglia" {
+    security_group_id = "${aws_security_group.spark_master_sg.id}"
     type = "ingress"
     from_port   = 80
     to_port     = 80
@@ -150,8 +152,8 @@ resource "aws_security_group_rule" "spark-master-spark-history" {
   }
 
 # Hue
- resource "aws_security_group_rule" "spark-master-hue" {
-    security_group_id = "${aws_security_group.spark-master.id}"
+ resource "aws_security_group_rule" "spark_master_hue" {
+    security_group_id = "${aws_security_group.spark_master_sg.id}"
     type = "ingress"
     from_port   = 8888
     to_port     = 8888
@@ -160,12 +162,12 @@ resource "aws_security_group_rule" "spark-master-spark-history" {
   }
   
   
-/*  
+/* TODO verify if we need  
   
 ## Egress
   
-resource "aws_security_group_rule" "spark-master-egress" {
-    security_group_id = "${aws_security_group.spark-master.id}"
+resource "aws_security_group_rule" "spark_master_egress" {
+    security_group_id = "${aws_security_group.spark_master_sg.id}"
     type = "egress"
     protocol = "-1"
     from_port = 0

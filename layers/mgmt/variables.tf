@@ -9,3 +9,9 @@ variable "zones" {
   type        = "list"
   default      = ["us-west-2a", "us-west-2b", "us-west-2c"]
 }
+
+variable "account_name" {
+  description = "Account name / alias"
+  type        = "string"
+  default = "sjncd2000"
+}

@@ -31,7 +31,6 @@ data "template_file" "public_zone_cidr" {
 
 module "network" {
   source  = "./modules/terraform-aws-vpc-master"
-  #"${format("%s/modules/terraform-aws-vpc-master", path.module)}"
 
   create_vpc = true
 
@@ -55,10 +54,11 @@ module "network" {
   create_database_subnet_group = false
 
   vpc_tags = {
-    Name = "${var.environment_name}"
+	Name        = "${var.application_name}-${var.environment_name}-vpc"
   }
 
   tags = {
+  	Application = "${var.application_name}"
     Environment = "${var.environment_name}"
   }
 }

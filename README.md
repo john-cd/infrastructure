@@ -86,6 +86,12 @@ Note: you can override the default values for the root module variables by passi
 terraform validate -var-file=./layers/mgmt/mgmt.tfvars ./layers/mgmt
 ```
 
+or pass variables directly
+
+```shell
+terraform validate -var 'admin_password=<password>' ./layers/api
+```
+
 ### Verify the Terraform execution plan then apply it
 
 ```shell

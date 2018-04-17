@@ -2,16 +2,19 @@
 // Variables
 //
 
-variable "environment_name" { 
-	description = "Name of the environment e.g. spark-dev, spark-staging..." 
-	type = "string"
-	default = "spark-dev" 
-}
-
 variable "region"        { 
 	description = "AWS region e.g. us-west-2"
 	type = "string"
-	default = "us-west-2" 
+}
+
+variable "application_name" {
+  description = "Unique name of the application"
+  type        = "string"
+}
+
+variable "environment_name" { 
+	description = "Name of the environment e.g. spark-dev, spark-staging..." 
+	type = "string"
 }
 
 variable "vpc_id"    { 
@@ -26,35 +29,32 @@ variable "main_subnet_id" {
 
 variable "spark_slave_count" {
     type = "string"
-	default = "2" 
-	}
+
+}
 
 variable "instance_type" { 
-	description = "Instance type"
+	description = "Instance type e.g. t2.micro"
 	type = "string"
-	default = "t2.micro" 
 }
 
 variable "key_name"      { 
-	description = "Name of the EC2 instance key"
-	type = "string"
-	default = "spark-ec2-key" 
+	description = "Name of the (main) EC2 instance key e.g. spark-ec2-key"
+	type = "string" 
 }
 
 variable "public_key_path" {
-  description = "File path to the public key file relative to the Terraform root module. See README for instructions on how to generate the key file."
+  description = "File path to the public key file, relative to the Terraform root module. See docs/ for instructions on how to generate the key file."
   type        = "string"
-  default     = "../../credentials/main-ec2-key.pub"
 }
 
 variable "bastion_security_group_id"  {
-	description = "ID of the security group associated with bastion servers (required)"
+	description = "ID of the security group used for commnication between bastion servers and internal subnets (required)"
 	type ="string" 
-	}
+}
 
-variable "log_bucket_name"  {
-	description = "Unique name of the S3 bucket that will collect logs (required)"
-	type ="string" 
-	}	
+variable "log_bucket_id" {
+  description = "ID of the S3 bucket used for log collection"
+  type ="string" 
+}
 	
 	

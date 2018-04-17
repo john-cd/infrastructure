@@ -1,3 +1,8 @@
+variable "application_name"  {
+	description = "Unique name of the application"
+	type ="string" 
+}	
+
 variable "environment_name" {
   description = "Environment name (e.g. mgmt, dev, staging, prod..)"
   type        = "string"

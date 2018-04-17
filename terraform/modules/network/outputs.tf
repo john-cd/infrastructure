@@ -30,3 +30,9 @@ output "nat_public_ips" {
   description = "List of public Elastic IPs created for AWS NAT Gateway"
   value       = ["${module.network.nat_public_ips}"]
 }
+
+output "egress_only_internet_gateway_id" {
+  description = "ID of the egress only internet gateway"
+  value = "${module.ipv6.egress_only_internet_gateway_id}"
+}
+

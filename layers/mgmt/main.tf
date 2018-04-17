@@ -7,7 +7,7 @@ terraform {
   # https://github.com/BWITS/terraform-best-practices
   backend "s3" {
     region = "us-west-2"
-    bucket = "charliedelta-config"
+    bucket = "charliedelta-backend"
     key    = "mgmt/mgmt.tfstate"
     # encrypt = true
 
@@ -16,28 +16,47 @@ terraform {
   }
 }
 
-# Avoid warning message
+## Avoid warning message
 provider "template" {
   version = "~> 1.0"
 }
 
-# Specify the provider and access details
+## Specify the provider and access details
+
 provider "aws" {
   region  = "${var.aws_region}"
   version = ">= 1.0.0"
 
-  shared_credentials_file = "${path.module}/../../credentials/credentials"
+  shared_credentials_file = "${path.root}/../../credentials/credentials"
   # profile = "default"
 }
 
-# Basic account setup
-# https://registry.terraform.io/modules/zoitech/account/aws/0.0.4?tab=inputs
-# https://github.com/zoitech/terraform-aws-account
+## Create a CloudTrail log bucket
+
+/* TODO do we need?
+module "log_bucket" {
+  source           = "../../terraform/modules/log_bucket"
+  region           = "${var.region}"
+  application_name = "mgmt"
+  environment_name = "$all"
+}
+*/
+
+## Gather info about current account
+
+data "aws_iam_account_alias" "current" {}
+
+# TODO avoid setting alias if it is already set
+
+## Basic account setup
+## Derived from
+## https://registry.terraform.io/modules/zoitech/account/aws/0.0.4?tab=inputs
+## https://github.com/zoitech/terraform-aws-account
 
 module "account" {
-  source       = "zoitech/account/aws"
+  source       = "../../terraform/modules/account"
   version      = "0.0.4"
-  account_name = "sjncd2000"
+  account_name = "${var.account_name}"
   aws_region   = "${var.aws_region}"
 
   ## Password settings
@@ -49,83 +68,37 @@ module "account" {
   ## CloudTrail settings  
   trail_name = "mgmt"
 
+  # TODO
   # trail_bucketname_create = 1
   # trail_bucketname = "" # Will defaults to <account-id>-logs.
   # trail_bucket_default_encryption = "AES256"
 
-  # tags = {}
+  /* TODO
+  tags = {
+    Name = "${var.application_name}-${var.environment_name}"
+	Application = "${var.application_name}"
+	Environment = "${var.environment_name}"
+  }	
+  */
 }
 
-# Create users and groups
-/*
-module "iam_automation" {
-  source = "${path.module}/../../terraform/modules/iam_automation"
+## Create users and groups
+
+/* TODO fix
+module "users_and_groups" {
+  source = "../../terraform/modules/users"
 }
 */
 
-# Create a management VPC, subnets, IGW, egress GW, routes...
+/* TODO do we need? 
+
+## Create a management VPC, subnets, IGW, egress GW, routes...
 
 module "mgmt_network" {
-  source           = "${path.module}/../../terraform/modules/network"
+  source           = "../../terraform/modules/network"
   environment_name = "mgmt"
   vpc_cidr         = "10.16.0.0/16"
   zones            = ["${var.zones}"]
 }
 
-# Create a security group for the bastion servers
-# https://registry.terraform.io/modules/terraform-aws-modules/security-group/aws/1.9.0
-# https://github.com/terraform-aws-modules/terraform-aws-security-group/tree/master/modules/ssh
-
-module "ssh-security-group" {
-  source  = "terraform-aws-modules/security-group/aws//modules/ssh"
-  version = "1.9.0"
-
-  name        = "ssh_sg"
-  description = "Security group for SSH, all world open"
-  vpc_id      = "${module.mgmt_network.vpc_id}"
-
-  ingress_cidr_blocks = ["0.0.0.0/0"]
-  create              = true
-}
-
-data "aws_iam_account_alias" "current" {}
-
-# Create an auto-scaling group of Bastion servers, allowing SSH access to the private EC2 instances
-# https://registry.terraform.io/modules/kurron/bastion/aws/0.9.0
-# https://github.com/kurron/terraform-aws-bastion
-
-module "bastion" {
-  source  = "kurron/bastion/aws"
-  version = "0.9.0"
-
-  # register a ec2 key
-  ssh_key_name   = ""                                                           # not used by the module?   
-  public_ssh_key = "${file("${path.root}/../../credentials/main-ec2-key.pub")}"
-
-  # launch configuration
-  region        = "us-west-2"
-  instance_type = "t2.micro"
-
-  # auto-scaling group
-  desired_capacity          = 1
-  max_size                  = 2
-  min_size                  = 1
-  health_check_grace_period = 300
-  cooldown                  = 90  # seconds
-
-  # auto-scaling group tags
-  creator     = "${data.aws_iam_account_alias.current.name}"
-  environment = "mgmt"
-  project     = "mgmt"
-  freetext    = ""
-
-  # schedule
-  scale_up_cron               = "0 9 * * 1-5"  # 9AM weekdays 
-  scale_down_cron             = "0 18 * * 1-5" # 6PM weekdays
-  scale_down_desired_capacity = 0
-  scale_down_min_size         = 0
-
-  security_group_ids = ["${module.ssh-security-group.this_security_group_id}"]
-
-  subnet_ids = ["${module.mgmt_network.public_subnets}"]
-}
+*/

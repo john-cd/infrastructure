@@ -1,9 +1,9 @@
-# Create automation group
+## Create automation group
 
 resource "aws_iam_group" "automation_group" {
   name = "automation_group"
 
-  #  path = "/users/"
+  #  path = "/devops/"
 }
 
 data "aws_iam_policy" "sysadmin_policy" {
@@ -15,15 +15,16 @@ resource "aws_iam_group_policy_attachment" "automation_group_attach" {
   policy_arn = "${data.aws_iam_policy.sysadmin_policy.arn}"
 }
 
-# Create automation user
+
+## Create automation user
 
 resource "aws_iam_user" "automation_user" {
-  name          = "automation_user"
+  name          = "automation-user"
   force_destroy = true
 }
 
 resource "aws_iam_group_membership" "automation_group_membership" {
-  name = "automation_group_membership"
+  name = "automation-group-membership"
 
   users = [
     "${aws_iam_user.automation_user.name}",

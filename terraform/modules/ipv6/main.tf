@@ -10,3 +10,5 @@ resource "aws_route" "route_to_egress" {
   destination_ipv6_cidr_block = "::/0"
   egress_only_gateway_id      = "${aws_egress_only_internet_gateway.egress.id}"
 }
+
+
