@@ -32,12 +32,12 @@ module "bastion_source_security_group" {
   version = "1.9.0"
 
   create      = true
-  name        = "${var.application_name}-${var.environment_name}-bastion-sg"
+  name        = "${var.application_name}-${var.environment_name}-bastion-source-sg"
   description = "Security group for communication between bastion servers and private subnets"
   vpc_id      = "${var.vpc_id}"
 
   tags = {
-    Name        = "${var.application_name}-${var.environment_name}-bastion-sg"
+    Name        = "${var.application_name}-${var.environment_name}-bastion-source-sg"
     Application = "${var.application_name}"
     Environment = "${var.environment_name}"
   }

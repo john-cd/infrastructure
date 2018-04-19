@@ -53,7 +53,7 @@ resource "aws_launch_configuration" "bastion_lc" {
   key_name                    = "${aws_key_pair.bastion_key.key_name}"
   security_groups             = ["${list(module.ssh-security-group.this_security_group_id, module.bastion_source_security_group.this_security_group_id)}"]
   associate_public_ip_address = true
-  enable_monitoring           = true
+  enable_monitoring           = false
 
   lifecycle {
     create_before_destroy = true
@@ -79,7 +79,7 @@ resource "aws_autoscaling_group" "bastion_asg" {
 
   tag {
     key                 = "Name"
-    value               = "${var.application_name}-${var.environment_name}-bastion-asg"
+    value               = "${var.application_name}-${var.environment_name}-bastion"
     propagate_at_launch = true
   }
 
@@ -97,7 +97,7 @@ resource "aws_autoscaling_group" "bastion_asg" {
 
   tag {
     key                 = "Description"
-    value               = "Bastion server auto-scaling group. Control SSH access to instances within the VPC"
+    value               = "Bastion server auto-scaling group. SSH there to access internal instances within the VPC"
     propagate_at_launch = true
   }
 }

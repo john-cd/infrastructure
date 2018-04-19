@@ -10,6 +10,12 @@ variable "zones" {
   default     = ["us-west-2a", "us-west-2b", "us-west-2c"]
 }
 
+variable "main_domain_name" {
+  description = "DNS domain name of the apex zone e.g. example.com"
+  type        = "string"
+  default     = "john-cd.com"
+}
+
 variable "application_name" {
   description = "Unique name of the application"
   type        = "string"
@@ -34,6 +40,13 @@ variable "public_key_path" {
   default     = "../../credentials/main-ec2-key.pub"
 }
 
+variable "route53_account_credentials_profile" {
+  description = "Profile in the credentials file that gives access to the AWS account that contains the apex Route 53 DNS zone (usually a master AWS account)"
+  type        = "string"
+  default     = "primary"
+}
+
+/* TODO
 variable "admin_email" {
   description = "Email address of the Kubernetes administrator"
   type        = "string"
@@ -44,3 +57,5 @@ variable "admin_password" {
   description = "Password of the Kubernetes administrator"
   type        = "string"
 }
+*/
+

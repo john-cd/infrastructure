@@ -11,8 +11,6 @@ terraform {
     key    = "api/dev/dev.tfstate"
 
     #encrypt = true
-
-
     #kms_key_id = "alias/terraform"
     #dynamodb_table = "terraform-lock"
 
@@ -33,8 +31,7 @@ provider "aws" {
   region  = "${var.region}"
 
   shared_credentials_file = "${path.root}/../../credentials/credentials"
-
-  # profile = "default"
+  profile                 = "default"
 }
 
 ## Create S3 buckets for logs, configuration data and static website data
@@ -54,12 +51,29 @@ module "conf_bucket" {
   log_bucket_id    = "${module.log_bucket.log_bucket_id}"
 }
 
+locals {
+  subdomain    = "${var.environment_name}"                    # for now
+  website_fqdn = "${local.subdomain}.${var.main_domain_name}"
+}
+
 module "web_bucket" {
   source           = "../../terraform/modules/static_website_bucket"
   region           = "${var.region}"
+  bucket_name      = "${local.website_fqdn}"
   application_name = "${var.application_name}"
   environment_name = "${var.environment_name}"
   log_bucket_id    = "${module.log_bucket.log_bucket_id}"
+}
+
+module "web_dns_record" {
+  source              = "../../terraform/modules/dns_record_web"
+  region              = "${var.region}"
+  credentials_file    = "${path.root}/../../credentials/credentials"
+  credentials_profile = "primary"
+  zone_domain_name    = "${var.main_domain_name}"
+  subdomain           = "${local.subdomain}"
+  hosted_zone_id      = "${module.web_bucket.hosted_zone_id}"
+  website_domain      = "${module.web_bucket.website_domain}"
 }
 
 ## Create a VPC, subnets, IGW, egress GW, routes...
@@ -110,27 +124,25 @@ resource "aws_key_pair" "main_ec2_key" {
 
 ## Install Kubernetes
 
-/* TODO
-
 module "kube" {
   source = "../../terraform/modules/kube"
 
-  region               = "${var.region}"
-  application_name     = "${var.application_name}"
-  environment_name     = "${var.environment_name}"
-  base_domain_name     = ""
-  vpc_id               = "${module.main_network.vpc_id}"
-  master_count         = "1"
-  master_instance_type = "t2.micro"
-  master_subnet_ids    = ["${module.main_network.private_subnets}"]
-  worker_count         = "1"
-  worker_instance_type = "t2.micro"
-  worker_subnet_ids    = ["${module.main_network.private_subnets}"]
+  region           = "${var.region}"
+  application_name = "${var.application_name}"
+  environment_name = "${var.environment_name}"
 
-  ssh_key_name = "${aws_key_pair.main_ec2_key.name}"
+  #base_domain_name     = ""
+  vpc_id                   = "${module.main_network.vpc_id}"
+  master_count             = "1"
+  master_instance_type     = "t2.micro"
+  master_subnet_ids        = ["${module.main_network.private_subnets}"]
+  worker_count             = "1"
+  worker_instance_type     = "t2.micro"
+  worker_subnet_ids        = ["${module.main_network.private_subnets}"]
+  etcd_instance_count      = "1"
+  etcd_instance_type       = "t2.micro"
+  etcd_instance_subnet_ids = ["${module.main_network.private_subnets}"]
 
-  admin_email    = "${var.admin_email}"
-  admin_password = "${var.admin_password}"
+  bastion_source_security_group_id = "${module.bastion.bastion_source_security_group_id}"
+  default_keypair_name             = "${aws_key_pair.main_ec2_key.key_name}"
 }
-
-*/
