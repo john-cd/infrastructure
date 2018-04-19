@@ -39,5 +39,11 @@ https://serialseb.com/blog/2016/05/11/terraform-working-around-no-count-on-modul
 - install python 2.x on EC2 instances for Ansible?
 - finish setup-ansible script 
 
+## TODO Helm
 
- 
+- review
+https://github.com/eldada/jenkins-pipeline-kubernetes
+https://github.com/eldada/jenkins-in-kubernetes
+https://dzone.com/articles/easily-automate-your-cicd-pipeline-with-jenkins-he
+
+- Consider using ``artifactory`` instead of Docker registry
